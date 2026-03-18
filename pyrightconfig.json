@@ -1,0 +1,7 @@
+{
+  "venvPath": "ai_wellness_mirror",
+  "venv": "venv",
+  "pythonVersion": "3.9",
+  "include": ["ai_wellness_mirror"],
+  "extraPaths": ["ai_wellness_mirror"]
+}
