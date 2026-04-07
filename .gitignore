@@ -36,3 +36,13 @@ Thumbs.db
 
 # pytest
 .pytest_cache/
+
+# FER2013 dataset (too large for git)
+fer2013.csv
+*.csv
+
+# Session data & captured photos (personal/private)
+data/
+
+# Large model files (keep emotion_model.keras — it's only ~5MB)
+# models/*.h5
