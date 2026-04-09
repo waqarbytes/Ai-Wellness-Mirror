@@ -18,6 +18,7 @@ from modules.head_pose import HeadPoseEstimator
 from modules.landmarks import LandmarkExtractor
 from modules.overlay import DashboardOverlay
 from modules.storage import DataLogger
+from modules.voice import VoiceAnalyzer
 
 def main():
     print("Initializing AI Wellness Mirror...")
@@ -46,6 +47,8 @@ def main():
         fusion = SignalFusion()
         overlay = DashboardOverlay()
         logger = DataLogger(username)
+        voice = VoiceAnalyzer(interval_secs=4.0)
+        voice.start()
 
         # Open webcam
         cap = cv2.VideoCapture(0)
@@ -82,6 +85,7 @@ def main():
             posture_state = "Unknown"
             fatigue_state = "Unknown"
             emotion_state, emotion_conf = "Unknown", 0.0
+            vocal_state,   vocal_conf   = voice.vocal_state   # always latest from mic thread
             wellness_score = 0.5
             photo_path = ""
             
@@ -98,9 +102,11 @@ def main():
                     
                     # 5. Emotion Classification
                     emotion_state, emotion_conf = emotion.evaluate(frame, face_bbox)
-                    
-                    # 6. Signal Fusion
-                    wellness_score = fusion.compute_wellness(posture_state, f_score, emotion_state)
+
+                    # 6. Signal Fusion (voice already read above)
+                    wellness_score = fusion.compute_wellness(
+                        posture_state, f_score, emotion_state, vocal_state
+                    )
                     
                     # Capture photo on first successful face detection
                     if not photo_captured:
@@ -121,7 +127,6 @@ def main():
                         photo_path,
                     )
                     
-            # 7. Render Overlay
             frame = overlay.render(
                 frame,
                 face_bbox,
@@ -130,6 +135,7 @@ def main():
                 (emotion_state, emotion_conf),
                 wellness_score,
                 fps,
+                vocal_tuple=(vocal_state, vocal_conf),
             )
             
             cv2.imshow("AI Wellness Mirror", frame)
@@ -142,6 +148,7 @@ def main():
         if cap is not None:
             cap.release()
         cv2.destroyAllWindows()
+        voice.stop()
         if detector is not None:
             detector.close()
         if landmarks is not None:

@@ -13,7 +13,7 @@ class DashboardOverlay:
         
         self.font = cv2.FONT_HERSHEY_SIMPLEX
 
-    def render(self, frame, face_bbox, posture_state, fatigue_state, emotion_tuple, wellness_score, fps):
+    def render(self, frame, face_bbox, posture_state, fatigue_state, emotion_tuple, wellness_score, fps, vocal_tuple=None):
         """
         Draw bounding box, signals, and dashboard onto the frame.
         """
@@ -31,8 +31,8 @@ class DashboardOverlay:
 
         # --- Draw Dashboard Panel ---
         # Panel Background
-        panel_w = 280
-        panel_h = 200
+        panel_w = 300
+        panel_h = 225
         margin = 20
         px1, py1 = w - panel_w - margin, margin
         px2, py2 = w - margin, margin + panel_h
@@ -43,14 +43,19 @@ class DashboardOverlay:
         cv2.addWeighted(overlay, 0.7, frame, 0.3, 0, frame)
         cv2.rectangle(frame, (px1, py1), (px2, py2), self.color_accent, 2)
 
+        # Vocal state row
+        vocal_state, vocal_conf = vocal_tuple if vocal_tuple else ("--", 0.0)
+        vocal_str = f"{vocal_state} ({vocal_conf*100:.0f}%)" if vocal_state != "--" else "--"
+
         # Dashboard Text items
         texts = [
             ("AI Wellness Mirror", self.color_accent, 0.6, 2),
-            (f"Emotion: {emotion_state} ({emotion_conf:.0f}%)", self.color_text, 0.5, 1),
-            (f"Posture: {posture_state}", self._get_posture_color(posture_state), 0.5, 1),
-            (f"Fatigue: {fatigue_state}", self._get_fatigue_color(fatigue_state), 0.5, 1),
+            (f"Emotion : {emotion_state} ({emotion_conf:.0f}%)", self.color_text, 0.5, 1),
+            (f"Posture : {posture_state}", self._get_posture_color(posture_state), 0.5, 1),
+            (f"Fatigue : {fatigue_state}", self._get_fatigue_color(fatigue_state), 0.5, 1),
+            (f"Voice   : {vocal_str}", self._get_vocal_color(vocal_state), 0.5, 1),
             (f"Wellness: {wellness_score:.2f}", self._get_wellness_color(wellness_score), 0.5, 1),
-            (f"FPS: {fps:.1f}", self.color_text, 0.5, 1)
+            (f"FPS     : {fps:.1f}", self.color_text, 0.5, 1),
         ]
 
         text_y = py1 + 30
@@ -71,6 +76,14 @@ class DashboardOverlay:
         if state == "Normal": return self.color_good
         if state == "Yawning": return self.color_warn
         return self.color_alert
+
+    def _get_vocal_color(self, state: str):
+        """Return a colour based on the detected vocal state."""
+        s = str(state).lower()
+        if s == "calm":     return self.color_good
+        if s == "stressed": return self.color_alert
+        if s == "fatigued": return self.color_warn
+        return self.color_text
 
     def _get_wellness_color(self, score):
         if score > 0.8: return self.color_good
